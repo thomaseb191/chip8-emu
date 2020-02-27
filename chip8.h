@@ -4,7 +4,7 @@ class chip8 {
         ~chip8();
 
         void initialize();
-        void loadgame();
+        void loadgame(char*);
         void emulateCycle();
 
     private:
@@ -20,4 +20,9 @@ class chip8 {
 
         unsigned char delay_timer;
         unsigned char sound_timer;
+
+        unsigned char stack[16]; //16 levels of stack
+        unsigned char sp; //Stack pointer
+
+        unsigned char key[16]; //Current state of keypad
 };
