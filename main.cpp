@@ -12,5 +12,9 @@ int main(int argc, char **argv){
     }
     myChip8.loadgame(argv[1]);
 
+    while (true) {
+        myChip8.emulateCycle();
+    }
+
     return 0;
 }

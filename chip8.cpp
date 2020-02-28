@@ -116,6 +116,68 @@ void chip8::loadgame(char* filename){
  * Update timers 
  */
 void chip8::emulateCycle(){
+    //Fetch
+    opcode = memory[pc] << 8 | memory[pc + 1];
 
+    switch (opcode & 0xF000) {
+    case 0x0000:
+        switch (opcode & 0x000F) {
+        case 0x0000: //0x00E0: Clears the screen
+            for (int i = 0; i < 64*32; i++)
+                gfx[i] = 0;
+            pc += 2;
+            break;
+
+        case 0x000E: //0x00EE: Return from a subroutine
+            pc = stack[sp];
+            sp--;
+        
+        default:
+            printf("0x%.4X invalid opcode\n", opcode);
+            break;
+        }
+        break;
+    
+    case 0x1000: //0x1nnn: Jump to addr
+        pc = opcode & 0x0FFF;
+        break;
+    
+    case 0x2000: //0x2nnn: Call subroutine at addr
+        stack[sp] = pc;
+        sp++;
+        pc = opcode & 0x0FFF;
+        break;
+
+    case 0x3000: //0x3xkk: Skip next instruction if Vx=kk
+        if (V[opcode >> 8 & 0x000F] == opcode & 0x00FF)
+            pc += 4;
+        break;
+
+    case 0x4000: //0x4xkk: Skip next instruction if Vx!=kk
+        if (V[opcode >> 8 & 0x000F] != opcode & 0x00FF)
+            pc += 4;
+        break;
+
+    case 0x5000: //0x5xy0: Skip next instruction if Vx = Vy
+        if (V[opcode >> 8 & 0x000F] == V[opcode >> 4 & 0x000F])
+            pc += 4;
+        break;
+    
+    case 0x6000: //0x6xkk: Set Vx = kk
+        V[opcode >> 8 & 0x000F] = opcode & 0x00FF;
+        pc += 2;
+        break;
+
+    case 0x7000: //0x7xkk: Set Vx = Vx + kk
+        V[opcode >> 8 & 0x000F] = V[opcode >> 8 & 0x000F] + opcode & 0x00FF;
+        pc += 2;
+        break;
+
+
+    default:
+        printf("0x%.4X invalid opcode\n", opcode);
+        pc+=2;
+        break;
+    }
 }
 
