@@ -22,6 +22,14 @@ unsigned char chip8_fontset[80] =
   0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 }; //Copied directly from http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
 
+chip8::chip8(){
+
+}
+
+chip8::~chip8(){
+
+}
+
 /*
  * Initialize registers and memory once
  * ie, set everything to 0
@@ -110,3 +118,4 @@ void chip8::loadgame(char* filename){
 void chip8::emulateCycle(){
 
 }
+
