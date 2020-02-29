@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "chip8.h"
 
 unsigned char chip8_fontset[80] =
@@ -105,6 +106,8 @@ void chip8::loadgame(char* filename){
         printf("Error: ROM too big for memory");
     }
 
+    srand(time(NULL)); //Initialize randome seed
+
     fclose(rom);
     free(buffer);
 
@@ -129,8 +132,10 @@ void chip8::emulateCycle(){
             break;
 
         case 0x000E: //0x00EE: Return from a subroutine
-            pc = stack[sp];
             sp--;
+            pc = stack[sp];
+            pc += 2;
+            break;
         
         default:
             printf("0x%.4X invalid opcode\n", opcode);
@@ -149,18 +154,18 @@ void chip8::emulateCycle(){
         break;
 
     case 0x3000: //0x3xkk: Skip next instruction if Vx=kk
-        if (V[opcode >> 8 & 0x000F] == opcode & 0x00FF)
-            pc += 4;
+        if (V[opcode >> 8 & 0x000F] == opcode & 0x00FF) pc += 2;
+        pc += 2;
         break;
 
     case 0x4000: //0x4xkk: Skip next instruction if Vx!=kk
-        if (V[opcode >> 8 & 0x000F] != opcode & 0x00FF)
-            pc += 4;
+        if (V[opcode >> 8 & 0x000F] != opcode & 0x00FF) pc += 2;
+        pc += 2;
         break;
 
     case 0x5000: //0x5xy0: Skip next instruction if Vx = Vy
-        if (V[opcode >> 8 & 0x000F] == V[opcode >> 4 & 0x000F])
-            pc += 4;
+        if (V[opcode >> 8 & 0x000F] == V[opcode >> 4 & 0x000F]) pc += 2;
+        pc += 2;
         break;
     
     case 0x6000: //0x6xkk: Set Vx = kk
@@ -170,6 +175,85 @@ void chip8::emulateCycle(){
 
     case 0x7000: //0x7xkk: Set Vx = Vx + kk
         V[opcode >> 8 & 0x000F] = V[opcode >> 8 & 0x000F] + opcode & 0x00FF;
+        pc += 2;
+        break;
+
+    case 0x8000: //Enter math mode
+    {
+        unsigned short x = opcode >> 8 & 0x000F;
+        unsigned short y = opcode >> 4 & 0x000F;
+        switch (opcode & 0x000F){
+        case 0x0000: //0x8xy0: Set Vx = Vy
+            V[x] = V[y];
+            break;
+        
+        case 0x0001: //0x8xy1: Set Vx = Vx OR Vy
+            V[x] = V[x] | V[y];
+            break;
+        
+        case 0x0002: //0x8xy2: Set Vx = Vx AND Vy
+            V[x] = V[x] & V[y];
+            break;
+
+        case 0x0003: //0x8xy3: Set Vx = Vx XOR Vy
+            V[x] = V[x] ^ V[y];
+            break;
+
+        case 0x0004: //0x8xy4: Set Vx = Vx + Vy
+        {
+            unsigned short r = V[x] + V[y];
+            if (r > 0xFF) V[0xF] = 1;
+            else V[0xF] = 0;
+            V[x] = r & 0xFF;
+            break;
+        }
+
+        case 0x0005: //0x8xy5: Set Vx = Vx - Vy
+            if (V[x] > V[y]) V[0xF] = 1;
+            else V[0xF] = 0;
+            V[x] = V[x] - V[y];
+            break;    
+
+        case 0x0006: //0x8xy6: Set Vx = Vx SHR 1
+            V[0xF] = V[x] & 0x1;
+            V[x] = V[x] >> 1;
+            break;
+
+        case 0x0007: //0x8xy7: Set Vx = Vy - Vx
+            if (V[y] > V[x]) V[0xF] = 1;
+            else V[0xF] = 0;
+            V[x] = V[y] - V[x];
+            break;
+        
+        case 0x000E: //0x8xyE: Set Vx = Vx SHL 1
+            V[0xF] = V[x] & 0x8;
+            V[x] = V[x] << 1;
+            break;
+
+        default:
+            printf("0x%.4X invalid opcode\n", opcode);
+            break;
+        }
+        pc += 2;
+        break;
+    }
+
+    case 0x9000: //0x9xy0: Skip next instruction if Vx != Vy
+        if (V[opcode >> 8 & 0x000F] == V[opcode >> 4 & 0x000F]) pc += 2;
+        pc += 2;
+        break;
+
+    case 0xA000: //0xAnnn: Set I = nnn
+        I = opcode & 0x0FFF;
+        pc += 2;
+        break;
+    
+    case 0xB000: //0xBnnn: Jump to location nnn + V0
+        pc = V[0] + opcode & 0x0FFF;
+        break;
+
+    case 0xC000: //0xCxkk: Set Vx = rand AND kk
+        V[opcode >> 8 & 0x000F] = (rand() % 256) & opcode;
         pc += 2;
         break;
 
