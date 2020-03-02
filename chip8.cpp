@@ -3,6 +3,9 @@
 #include <time.h>
 #include "chip8.h"
 
+#define WIDTH 64
+#define HEIGHT 32
+
 unsigned char chip8_fontset[80] =
 { 
   0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -40,6 +43,7 @@ void chip8::initialize() {
     opcode  = 0;
     I       = 0;
     sp      = 0;
+    drawflag = 0;   //
 
     //Clear memory
     for(int i = 0; i < 4096; i++)
@@ -154,34 +158,34 @@ void chip8::emulateCycle(){
         break;
 
     case 0x3000: //0x3xkk: Skip next instruction if Vx=kk
-        if (V[opcode >> 8 & 0x000F] == opcode & 0x00FF) pc += 2;
+        if (V[(opcode >> 8) & 0x000F] == (opcode & 0x00FF)) pc += 2;
         pc += 2;
         break;
 
     case 0x4000: //0x4xkk: Skip next instruction if Vx!=kk
-        if (V[opcode >> 8 & 0x000F] != opcode & 0x00FF) pc += 2;
+        if (V[(opcode >> 8) & 0x000F] != (opcode & 0x00FF)) pc += 2;
         pc += 2;
         break;
 
     case 0x5000: //0x5xy0: Skip next instruction if Vx = Vy
-        if (V[opcode >> 8 & 0x000F] == V[opcode >> 4 & 0x000F]) pc += 2;
+        if (V[(opcode >> 8) & 0x000F] == V[(opcode >> 4) & 0x000F]) pc += 2;
         pc += 2;
         break;
     
     case 0x6000: //0x6xkk: Set Vx = kk
-        V[opcode >> 8 & 0x000F] = opcode & 0x00FF;
+        V[(opcode >> 8) & 0x000F] = opcode & 0x00FF;
         pc += 2;
         break;
 
     case 0x7000: //0x7xkk: Set Vx = Vx + kk
-        V[opcode >> 8 & 0x000F] = V[opcode >> 8 & 0x000F] + opcode & 0x00FF;
+        V[(opcode >> 8) & 0x000F] = V[(opcode >> 8) & 0x000F] + opcode & 0x00FF;
         pc += 2;
         break;
 
     case 0x8000: //Enter math mode
     {
-        unsigned short x = opcode >> 8 & 0x000F;
-        unsigned short y = opcode >> 4 & 0x000F;
+        unsigned short x = (opcode >> 8) & 0x000F;
+        unsigned short y = (opcode >> 4) & 0x000F;
         switch (opcode & 0x000F){
         case 0x0000: //0x8xy0: Set Vx = Vy
             V[x] = V[y];
@@ -239,7 +243,7 @@ void chip8::emulateCycle(){
     }
 
     case 0x9000: //0x9xy0: Skip next instruction if Vx != Vy
-        if (V[opcode >> 8 & 0x000F] == V[opcode >> 4 & 0x000F]) pc += 2;
+        if (V[(opcode >> 8) & 0x000F] == V[(opcode >> 4) & 0x000F]) pc += 2;
         pc += 2;
         break;
 
@@ -249,14 +253,41 @@ void chip8::emulateCycle(){
         break;
     
     case 0xB000: //0xBnnn: Jump to location nnn + V0
-        pc = V[0] + opcode & 0x0FFF;
+        pc = V[0] + (opcode & 0x0FFF);
         break;
 
     case 0xC000: //0xCxkk: Set Vx = rand AND kk
-        V[opcode >> 8 & 0x000F] = (rand() % 256) & opcode;
+        V[(opcode >> 8) & 0x000F] = (rand() % 256) & opcode;
         pc += 2;
         break;
 
+    case 0xD000: //0xDxyn: Display n-byte sprite
+    {
+        unsigned short x = V[(opcode >> 8) & 0x000F];
+        unsigned short y = V[(opcode >> 4) & 0x000F];
+        unsigned short height = opcode & 0x000F;
+        unsigned short pixels;
+
+        V[0xF] = 0; //Reset Vf
+
+        for (int yoffset = 0; yoffset < height; yoffset++){
+            pixels = memory[I + yoffset];
+            for (int xoffset = 0; xoffset < 8; xoffset++){
+                if ((pixels & (0x80 >> xoffset)) != 0){
+                    unsigned short truex = (x + xoffset) % WIDTH;
+                    unsigned short truey = (y + yoffset) % HEIGHT;
+                    if (gfx[truex + truey*WIDTH] == 1) V[0xF] = 1;
+                    gfx[truex + truey*WIDTH] ^= 1;
+                    drawflag = true;
+                }
+            }
+
+        }
+
+        
+        pc+=2;
+        break;
+    }
 
     default:
         printf("0x%.4X invalid opcode\n", opcode);

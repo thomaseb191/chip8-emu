@@ -7,6 +7,9 @@ class chip8 {
         void loadgame(char*);
         void emulateCycle();
 
+        unsigned char gfx[64 * 32]; //Screen is 64x32 pixels
+        unsigned char drawflag;
+
     private:
         unsigned short opcode; //Represents one of 35 opcodes
 
@@ -15,8 +18,6 @@ class chip8 {
 
         unsigned short I; //Index register
         unsigned short pc; //Program counter
-
-        unsigned char gfx[64 * 32]; //Screen is 64x32 pixels
 
         unsigned char delay_timer;
         unsigned char sound_timer;
