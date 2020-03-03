@@ -10,6 +10,8 @@ class chip8 {
         unsigned char gfx[64 * 32]; //Screen is 64x32 pixels
         unsigned char drawflag;
 
+        unsigned char key[16]; //Current state of keypad
+
     private:
         unsigned short opcode; //Represents one of 35 opcodes
 
@@ -22,8 +24,7 @@ class chip8 {
         unsigned char delay_timer;
         unsigned char sound_timer;
 
-        unsigned char stack[16]; //16 levels of stack
+        unsigned short stack[16]; //16 levels of stack
         unsigned char sp; //Stack pointer
 
-        unsigned char key[16]; //Current state of keypad
 };

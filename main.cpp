@@ -11,13 +11,14 @@ SDL_Renderer* ren;
 #define WIDTH 64
 #define HEIGHT 32
 
-Uint32 waittime = 1000.0f/60.0f;
+Uint32 waittime = 500.0f/60.0f;
 Uint32 framestarttime = 0;
 Sint32 delaytime;
 bool isRunning = 1;
 
 int initgraphics();
 void draw();
+void keyboardChange(SDL_KeyboardEvent* , bool);
 
 int main(int argc, char **argv){
 
@@ -31,12 +32,25 @@ int main(int argc, char **argv){
     if (initgraphics()) return 1;
 
     while (isRunning) {
-        while (SDL_PollEvent(&Events))
-        {
-            if (Events.type == SDL_QUIT) isRunning = false;
-        }
 
         myChip8.emulateCycle();
+
+        while (SDL_PollEvent(&Events))
+        {
+            switch(Events.type){
+                case SDL_QUIT:
+                    isRunning = false;
+                    break;
+                case SDL_KEYDOWN:
+                    keyboardChange(&Events.key, 1);
+                    break;
+                case SDL_KEYUP:
+                    keyboardChange(&Events.key, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
 
         if (myChip8.drawflag) draw();
 
@@ -98,4 +112,60 @@ void draw(){
     }
     myChip8.drawflag = false;
     SDL_RenderPresent(ren);
+}
+
+void keyboardChange(SDL_KeyboardEvent* key, bool pressedDown){
+    switch (key->keysym.sym){
+        case '1':
+            myChip8.key[0x0] = pressedDown;
+            break;
+        case '2':
+            myChip8.key[0x1] = pressedDown;
+            break;
+        case '3':
+            myChip8.key[0x2] = pressedDown;
+            break;
+        case '4':
+            myChip8.key[0x3] = pressedDown;
+            break;
+        case 'q':
+            myChip8.key[0x4] = pressedDown;
+            break;
+        case 'w':
+            myChip8.key[0x5] = pressedDown;
+            break;
+        case 'e':
+            myChip8.key[0x6] = pressedDown;
+            break;
+        case 'r':
+            myChip8.key[0x7] = pressedDown;
+            break;
+        case 'a':
+            myChip8.key[0x8] = pressedDown;
+            break;
+        case 's':
+            myChip8.key[0x9] = pressedDown;
+            break;
+        case 'd':
+            myChip8.key[0xa] = pressedDown;
+            break;
+        case 'f':
+            myChip8.key[0xb] = pressedDown;
+            break;
+        case 'z':
+            myChip8.key[0xc] = pressedDown;
+            break;
+        case 'x':
+            myChip8.key[0xd] = pressedDown;
+            break;
+        case 'c':
+            myChip8.key[0xe] = pressedDown;
+            break;
+        case 'v':
+            myChip8.key[0xf] = pressedDown;
+            break;
+        default:
+            printf("No key binding for %c\n", key->keysym.sym);
+            break;
+    }
 }

@@ -125,6 +125,7 @@ void chip8::loadgame(char* filename){
 void chip8::emulateCycle(){
     //Fetch
     opcode = memory[pc] << 8 | memory[pc + 1];
+    //printf("pc: %.4X | opcode: 0x%.4X\n", pc, opcode);
 
     switch (opcode & 0xF000) {
     case 0x0000:
@@ -173,7 +174,7 @@ void chip8::emulateCycle(){
         break;
     
     case 0x6000: //0x6xkk: Set Vx = kk
-        V[(opcode >> 8) & 0x000F] = opcode & 0x00FF;
+        V[(opcode >> 8) & 0x000F] = (opcode & 0x00FF);
         pc += 2;
         break;
 
@@ -248,7 +249,7 @@ void chip8::emulateCycle(){
         break;
 
     case 0xA000: //0xAnnn: Set I = nnn
-        I = opcode & 0x0FFF;
+        I = (opcode & 0x0FFF);
         pc += 2;
         break;
     
@@ -284,15 +285,112 @@ void chip8::emulateCycle(){
 
         }
 
-        
         pc+=2;
         break;
     }
+
+    case 0xE000:
+        switch (opcode & 0x00FF){
+        case 0x009E: //0xEx9E Skip next instruction if key Vx pressed
+        {
+            unsigned short k = V[(opcode >> 8) & 0x000F];
+            if (key[k]) pc += 2;
+            break;
+        }
+        case 0x00A1: //0xExA1 Skip next instruction if key Vx not pressed
+        {
+            unsigned short k = V[(opcode >> 8) & 0x000F];
+            if (key[k] != true) pc += 2;
+            break;
+        }
+        default:
+            break;
+        }
+        pc += 2;
+        break;
+
+    case 0xF000:
+        switch (opcode & 0x00FF){
+        case 0x0007: //0xFx07: Set Vx to delay timer
+            V[(opcode >> 8) & 0x000F] = delay_timer;
+            pc += 2;
+            break;
+
+        case 0x000A: //0xFx0A: Wait for a key press, store the value in Vx
+        {
+            bool keyPressed;
+
+            for (int i = 0; i < 16; i++){
+                if (key[i]) {
+                    keyPressed = true;
+                    V[(opcode >> 8) & 0x000F] = i;
+                }
+            }
+            if (keyPressed) pc += 2;
+            break;
+
+        }
+
+        case 0x0015: //0xFx15: Set delay timer to Vx
+            delay_timer = V[(opcode >> 8) & 0x000F];
+            pc += 2;
+            break;
+
+        case 0x0018: //0xFx18: Set sound timer to Vx
+            sound_timer = V[(opcode >> 8) & 0x000F];
+            pc += 2;
+            break;
+
+        case 0x001E: //0xFx1E: Set I = I + Vx
+            I = I + V[(opcode >> 8) & 0x000F];
+            pc += 2;
+            break;
+
+        case 0x0029: //0xFx29: Set I = location of sprite Vx
+            I = V[(opcode >> 8) & 0x000F] * 5;
+            pc += 2;
+            break;
+
+        case 0x0033:
+        {
+            unsigned char value = V[(opcode >> 8) & 0x000F];
+            //printf("I = %d\n", I);
+            memory[I] = value / 100;
+            memory[I + 1] = (value / 10) % 10;
+            memory[I + 2] = value % 10;
+            pc += 2;
+            break;
+        }
+
+        case 0x0055:
+            for (int x = 0; x <= ((opcode >> 8) & 0x000F); x++){
+                 memory[I + x] = V[x];
+            }
+            pc += 2;
+            break;
+
+        case 0x0065:
+            for (int x = 0; x <= ((opcode >> 8) & 0x000F); x++){
+                //printf("I = %d\n", I + x);
+                V[x] = memory[I + x];
+            }
+            pc += 2;
+            break;
+
+        default:
+            printf("0x%.4X invalid opcode\n", opcode);
+            pc+=2;
+            break;
+        }
+        break;
 
     default:
         printf("0x%.4X invalid opcode\n", opcode);
         pc+=2;
         break;
     }
+
+    if (delay_timer) delay_timer--;
+    if (sound_timer) sound_timer--;
 }
 
