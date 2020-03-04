@@ -11,7 +11,7 @@ SDL_Renderer* ren;
 #define WIDTH 64
 #define HEIGHT 32
 
-Uint32 waittime = 500.0f/60.0f;
+Uint32 waittime = 10;
 Uint32 framestarttime = 0;
 Sint32 delaytime;
 bool isRunning = 1;
@@ -33,8 +33,6 @@ int main(int argc, char **argv){
 
     while (isRunning) {
 
-        myChip8.emulateCycle();
-
         while (SDL_PollEvent(&Events))
         {
             switch(Events.type){
@@ -42,15 +40,17 @@ int main(int argc, char **argv){
                     isRunning = false;
                     break;
                 case SDL_KEYDOWN:
-                    keyboardChange(&Events.key, 1);
+                    keyboardChange(&Events.key, true);
                     break;
                 case SDL_KEYUP:
-                    keyboardChange(&Events.key, 0);
+                    keyboardChange(&Events.key, false);
                     break;
                 default:
                     break;
             }
         }
+
+        myChip8.emulateCycle();
 
         if (myChip8.drawflag) draw();
 
@@ -115,6 +115,8 @@ void draw(){
 }
 
 void keyboardChange(SDL_KeyboardEvent* key, bool pressedDown){
+    if (pressedDown) printf("Key: %c pressed\n", key->keysym.sym);
+    else printf("Key: %c released\n", key->keysym.sym);
     switch (key->keysym.sym){
         case '1':
             myChip8.key[0x0] = pressedDown;

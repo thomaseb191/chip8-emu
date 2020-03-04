@@ -65,6 +65,9 @@ void chip8::initialize() {
     for(int i = 0; i < 80; i++)
         memory[i] = chip8_fontset[i]; //Load fontset from separate array
 
+    //Reset keys
+    for (int i = 0; i < 16; i++)
+        key[i] = 0;
 
 }
 
@@ -244,7 +247,7 @@ void chip8::emulateCycle(){
     }
 
     case 0x9000: //0x9xy0: Skip next instruction if Vx != Vy
-        if (V[(opcode >> 8) & 0x000F] == V[(opcode >> 4) & 0x000F]) pc += 2;
+        if (V[(opcode >> 8) & 0x000F] != V[(opcode >> 4) & 0x000F]) pc += 2;
         pc += 2;
         break;
 
@@ -318,7 +321,7 @@ void chip8::emulateCycle(){
 
         case 0x000A: //0xFx0A: Wait for a key press, store the value in Vx
         {
-            bool keyPressed;
+            bool keyPressed = false;
 
             for (int i = 0; i < 16; i++){
                 if (key[i]) {
